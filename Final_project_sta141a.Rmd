@@ -1,0 +1,163 @@
+---
+title: "Final Project"
+author: "Truc, Mary, Lik, Mengna "
+date: "12/1/2020"
+header-includes:
+   - \usepackage{enumerate,graphicx}
+geometry: margin=0.5in 
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+library(ggplot2)
+library(knitr)
+library(magrittr) 
+library(dplyr)
+
+#######Set up and Data Wrangling########
+
+setwd("/Users/trucle/Desktop/STA\ 138/Bank/bank-additional")
+# for this project we will be using the bank-additional-full.csv to do our analysis on.
+
+bank_additional_full <- read.csv("bank-additional-full.csv", sep=";", stringsAsFactors = F, header = T) 
+# this allows for the data to be separated rather than being mushed together.
+
+write.csv(bank_additional_full, "cleaned_bank_additional_full.csv") 
+# this write the clean data into a separate csv that we can use to work with
+
+any(is.na(bank_additional_full))
+# this to see if the data has been cleaned of all missing data.
+
+bank <- read.csv("cleaned_bank_additional_full.csv")[-1] 
+# -1 to get rid of them counting the # of rows 
+
+```
+
+```{r, echo = FALSE,eval = TRUE}
+#########Data manipulation##########
+
+# we transformed all of the quantitative values into numeric class for easier manipulation later on. 
+bank$age <- as.numeric(bank$age)
+bank$duration <- as.numeric(bank$duration)
+bank$campaign <- as.numeric(bank$campaign)
+bank$pdays <- as.numeric(bank$pdays)
+bank$previous <- as.numeric(bank$previous)
+bank$emp.var.rate <- as.numeric(bank$emp.var.rate)
+bank$cons.price.idx <- as.numeric(bank$cons.price.idx)
+bank$cons.conf.idx <- as.numeric(bank$cons.conf.idx)
+bank$nr.employed <- as.numeric(bank$nr.employed)
+
+sapply(bank, function(x) sum(is.na(x))) # this shows that there is no missing values within the dataset for any categories
+
+
+bank$y =ifelse(bank$y =='yes',1,0) # transforming 'yes' category into a binary 1=yes 0=no
+```
+
+```{r, echo= FALSE, eval = TRUE}
+####### Data Exploration ########
+summary(bank) # give the summary of each categories
+
+str(bank) # show the content of each categories 
+
+prop.table(table(bank$y)) 
+#Observe that the dataset predicted outcome (y) is skewed towards ‘no’ with over 88%.
+
+#checking the size of the dataset
+bank_row = nrow(bank)
+bank_col = ncol(bank)
+
+#observation of the dataset 
+head(bank)
+
+```
+
+```{r,echo=FALSE, eval=TRUE}
+# Age Category 
+gg<- ggplot(bank)
+summary(bank$age)
+
+# histogram plot for the distribution of age
+his_age = gg + geom_histogram(aes(x=age), color="black", fill="white", binwidth = 1)+
+  ggtitle("Age Distribbution")+xlab("Age")+ylab("Counts")+
+  geom_vline(aes(xintercept = mean(age), color="red"))+
+  theme(legend.position = "none")
+
+# Box plot for Age 
+bp_age = gg + geom_boxplot(aes(x="",y=age))+
+  ggtitle("Age Boxplot")+ylab("Age")
+
+#Age Distribution by Subscription 
+age_sub <- bank %>% group_by(y) %>% summarize(grp.mean=mean(age))
+
+
+his_age_sub = gg + geom_histogram(aes(x=age), color="black", fill="white", binwidth = 1)+
+  ggtitle("Term Deposite Subscription Based on Age")+xlab("Age")+ylab("Counts")+
+  geom_vline(data=age_sub, aes(xintercept=grp.mean), color="red")+
+  theme(legend.position = "none")+scale_x_continuous(breaks = seq(0,100,5))
+
+```
+
+```{r,echo=FALSE, eval=TRUE}
+# Education Category 
+summary(bank$education)
+
+#Bar graph for education 
+gg_edu=ggplot(bank, aes(x = education, fill=education))+geom_bar()+ggtitle("Distribution of Education Levels")
+
+# Subscription by Education
+edu_sub = ggplot(data = bank, aes(x=education, fill=y)) +
+         geom_bar() +
+         ggtitle("Term Deposit Subscription based on Education Level") +
+         xlab(" Education Level") +
+         guides(fill=guide_legend(title="Subscription of Term Deposit"))
+
+# Percentage of Yes within the group based on their education level 
+bank %>% 
+  group_by(education) %>% 
+  summarize(pct.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(pct.yes))
+
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Job Category
+summary(bank$job)
+
+# bar graph for job
+gg_job = ggplot(bank, aes(x = job, fill=job))+geom_bar()+ggtitle("Distribution of Job") 
+
+# subscription by job title 
+job_sub = ggplot(data = bank, aes(x=job, fill=y)) +
+         geom_bar() +
+         ggtitle("Term Deposit Subscription based on Job Position") +
+         xlab(" Job Position") +
+         guides(fill=guide_legend(title="Subscription of Term Deposit"))
+
+# Percentage of Yes in the group based on their job title
+bank %>% 
+  group_by(job) %>% 
+  summarize(pct.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(pct.yes))
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Martial Statues Category 
+# bar chart for martial status
+gg_martial = ggplot(bank, aes(x = marital, fill=marital)) + geom_bar() + 
+  ggtitle("Distribution of Martial Status") + xlab("Martial Status")
+
+# Subscription by marital status 
+marital_sub = ggplot(bank, aes(x = marital, fill=y)) + geom_bar() + 
+  ggtitle("Distribution of Martial Status") + xlab("Martial Status")
+
+# Percentage of Yes in the group based on their Marital status 
+
+bank %>% 
+  group_by(marital) %>% 
+  summarize(pct.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(pct.yes))
+
+```
