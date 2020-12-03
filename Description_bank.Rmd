@@ -1,0 +1,57 @@
+---
+title: "Data description - bank marketing"
+author: "Abhishek Roy"
+date: "10/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This document contains basic description of the marketing data of a banking institution. The primary goal of this dataset is to build a predictive/classification model.
+
+This document is made with R markdown. The Rmd file to generate this document is available on Canvas. 
+
+## Background
+
+This is real data from a Portuguese retail bank. The bank started a telemarketing campaign in 2008, aiming to subscribe new users to a term deposit. The authors of this dataset wanted to predict whether a client will subscribe to a long-term deposit. More information is available on [this website](https://archive.ics.uci.edu/ml/datasets/Bank+Marketing#) and the original paper by Moro, Cortez, and Rita (2014).
+
+## Data Structure 
+
+Four datasets are provided.
+
+* `bank-additional-full.csv` is the full data with additional variables.
+* `bank-additional.csv` has 10\% of the entries in the previous dataset, serving as a toy set for more computationally intensive algorithms.
+* `bank-full.csv` and `bank.csv` are older versions of the previous two datasets, respectively.
+
+Below is some sample code for loading the first dataset. Note that your report should not contain trunks of `R` code or raw output. You can achieve this by setting include=FALSE---you may need to read the `.rmd` file to understand what this means.
+
+```{r, message=FALSE,  warning=FALSE}
+bank <- read.table("./bank-additional/bank-additional-full.csv", head = T, sep = ";")
+# Please replace the above with your directory with the dataset
+# The working directory in an .rmd file is where the .rmd file is created, but that isn't the case for RStudio otherwise
+# Use getwd() to see what yours is
+
+head(bank)
+```
+
+There are 21 variables: 1 is the outcome (`y`) and the other 20 are inputs. Descriptions for a randomly selected few of the variables below:
+
+1. `housing`: Has housing loan? (Options: yes, no, unknown)
+2. `day_of_week`: last contact day of the week
+3. `campaign`: Number of contacts performed during this campaign and for this client (includes last contact). This variable is present as sometimes multiple calls were made to the same client.
+
+The descriptions for all variables are available on the website and in the zip file that contains the datasets. Please look over the descriptions carefully and consider whether you might want to transform the variable, or even add certain variables in at all. Many variables also have a missing value category.
+
+## Questions of Interest
+
+Consider one of the following questions as the primary question of interest for your project:
+
+* Build a prediction model for whether a client will sign on to a long-term deposit.
+* Investigate whether certain profiles of clients are more likely to be contacted multiple times.
+* Analyze the change in results of a model following different increases in sample size.
+
+You may also propose your own research question.
