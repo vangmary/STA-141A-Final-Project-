@@ -16,6 +16,7 @@ library(ggplot2)
 library(knitr)
 library(magrittr) 
 library(dplyr)
+library(tidyverse)
 
 #######Set up and Data Wrangling########
 
@@ -25,19 +26,18 @@ setwd("/Users/trucle/Desktop/STA\ 138/Bank/bank-additional")
 bank_additional_full <- read.csv("bank-additional-full.csv", sep=";", stringsAsFactors = F, header = T) 
 # this allows for the data to be separated rather than being mushed together.
 
+# to see how many rows have missing data
+sum(!complete.cases(bank_additional_full))
+
+sapply(bank_additional_full, function(x) sum(is.na(x))) # this shows that there is no missing values within the dataset for any categories
+
+
 write.csv(bank_additional_full, "cleaned_bank_additional_full.csv") 
 # this write the clean data into a separate csv that we can use to work with
 
-any(is.na(bank_additional_full))
-# this to see if the data has been cleaned of all missing data.
 
 bank <- read.csv("cleaned_bank_additional_full.csv")[-1] 
 # -1 to get rid of them counting the # of rows 
-
-```
-
-```{r, echo = FALSE,eval = TRUE}
-#########Data manipulation##########
 
 # we transformed all of the quantitative values into numeric class for easier manipulation later on. 
 bank$age <- as.numeric(bank$age)
@@ -50,72 +50,85 @@ bank$cons.price.idx <- as.numeric(bank$cons.price.idx)
 bank$cons.conf.idx <- as.numeric(bank$cons.conf.idx)
 bank$nr.employed <- as.numeric(bank$nr.employed)
 
-sapply(bank, function(x) sum(is.na(x))) # this shows that there is no missing values within the dataset for any categories
-
+# this checks if there are any missing data within each categories and push them into a category of there own. 
+# this shows the counts for each groups within each categories, run summary(bank) to see the result
+bank$job = fct_explicit_na(bank$job, "missing")
+bank$marital = fct_explicit_na(bank$marital, "missing")
+bank$education = fct_explicit_na(bank$education, "missing")
+bank$default = fct_explicit_na(bank$default, "missing")
+bank$loan = fct_explicit_na(bank$loan, "missing")
+bank$contact = fct_explicit_na(bank$contact, "missing")
+bank$poutcome = fct_explicit_na(bank$poutcome, "missing")
+bank$day_of_week = fct_explicit_na(bank$day_of_week, "missing")
+bank$housing = fct_explicit_na(bank$housing, "missing")
+bank$month = fct_explicit_na(bank$month, "missing")
 
 bank$y =ifelse(bank$y =='yes',1,0) # transforming 'yes' category into a binary 1=yes 0=no
 ```
 
-```{r, echo= FALSE, eval = TRUE}
-####### Data Exploration ########
-summary(bank) # give the summary of each categories
+```{r, echo=False, eval=True}
+##### Data Exploration ######
+summary(bank) # summary of each categories 
 
 str(bank) # show the content of each categories 
 
 prop.table(table(bank$y)) 
-#Observe that the dataset predicted outcome (y) is skewed towards ‘no’ with over 88%.
+# the dataset predicted outcome (y) is skewed towards 'no' with over 88%
 
-#checking the size of the dataset
+# checking the sixe of the dataset
 bank_row = nrow(bank)
 bank_col = ncol(bank)
 
-#observation of the dataset 
+# observation of the dataset
 head(bank)
-
 ```
 
-```{r,echo=FALSE, eval=TRUE}
-# Age Category 
-gg<- ggplot(bank)
+```{r, echo=FALSE, eval=TRUE}
+##### Category: Age
 summary(bank$age)
+gg <- ggplot(bank)
 
 # histogram plot for the distribution of age
-his_age = gg + geom_histogram(aes(x=age), color="black", fill="white", binwidth = 1)+
-  ggtitle("Age Distribbution")+xlab("Age")+ylab("Counts")+
-  geom_vline(aes(xintercept = mean(age), color="red"))+
+his_age = gg + geom_histogram(aes(x=age), color = "black", fill ="white", binwidth = 1) + 
+  ggtitle("Age Distribution")+
+  xlab("Age") + ylab("Counts")+
+  geom_vline(aes(xintercept=mean(age), color="red"))+
   theme(legend.position = "none")
 
-# Box plot for Age 
-bp_age = gg + geom_boxplot(aes(x="",y=age))+
-  ggtitle("Age Boxplot")+ylab("Age")
+# Box plot for Age
+bp_age = gg+ geom_boxplot(aes(x="", y=age),outlier.colour = "red")+
+  ggtitle("Age Boxplot")+ ylab("Age")
+# made outliers data points red
 
-#Age Distribution by Subscription 
-age_sub <- bank %>% group_by(y) %>% summarize(grp.mean=mean(age))
+mean_age <- bank_additional_full %>% group_by(y) %>% summarize(grp.mean=mean(age))
 
-
-his_age_sub = gg + geom_histogram(aes(x=age), color="black", fill="white", binwidth = 1)+
-  ggtitle("Term Deposite Subscription Based on Age")+xlab("Age")+ylab("Counts")+
-  geom_vline(data=age_sub, aes(xintercept=grp.mean), color="red")+
-  theme(legend.position = "none")+scale_x_continuous(breaks = seq(0,100,5))
+his_age_sub = ggplot (bank_additional_full, aes(x=age)) + 
+  geom_histogram(color = "black", fill = "green", binwidth = 1) +
+  ggtitle('Subscription of Term Deposit by Age') + ylab('Count') + xlab('Age') +
+  facet_grid(cols=vars(y))+
+  scale_x_continuous(breaks = seq(0,100,5)) +
+  geom_vline(data=mean_age, aes(xintercept=grp.mean), color="red", linetype="dashed") + geom_vline(data=bank_additional_full, aes(xintercept=mean(age)), color="black")
+# this output two histograms for comparison, left histogram is for Age Distribution and the right histogram is for Subscription by Age. The black line shows the mean of the age superimposed onto the histograms and the dashed red line shows the mean of the age that subscriped onto the term deposit. 
 
 ```
 
-```{r,echo=FALSE, eval=TRUE}
-# Education Category 
+```{r, echo=FALSE, eval=TRUE}
+# Category: Education
 summary(bank$education)
 
 #Bar graph for education 
 gg_edu=ggplot(bank, aes(x = education, fill=education))+geom_bar()+ggtitle("Distribution of Education Levels")
 
 # Subscription by Education
-edu_sub = ggplot(data = bank, aes(x=education, fill=y)) +
+edu_sub = ggplot(data = bank_additional_full, aes(x=education, fill=y)) +
          geom_bar() +
          ggtitle("Term Deposit Subscription based on Education Level") +
          xlab(" Education Level") +
          guides(fill=guide_legend(title="Subscription of Term Deposit"))
+# need to use the bank_additional_full dataset to get the two layers bar graphs.
 
-# Percentage of Yes within the group based on their education level 
-bank %>% 
+# Percentage of Yes within each group based on their education level 
+bank_additional_full %>% 
   group_by(education) %>% 
   summarize(pct.yes = mean(y=="yes")*100) %>% 
   arrange(desc(pct.yes))
@@ -123,41 +136,61 @@ bank %>%
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
-# Job Category
+```{r, echo=FALSE, eval=TRUE}
+# Category: Job
 summary(bank$job)
 
 # bar graph for job
-gg_job = ggplot(bank, aes(x = job, fill=job))+geom_bar()+ggtitle("Distribution of Job") 
+gg_job = ggplot(bank, aes(x = job, fill=job))+geom_bar()+ggtitle("Distribution of Jobs") 
 
 # subscription by job title 
-job_sub = ggplot(data = bank, aes(x=job, fill=y)) +
+job_sub = ggplot(data = bank_additional_full, aes(x=job, fill=y)) +
          geom_bar() +
          ggtitle("Term Deposit Subscription based on Job Position") +
          xlab(" Job Position") +
          guides(fill=guide_legend(title="Subscription of Term Deposit"))
 
-# Percentage of Yes in the group based on their job title
-bank %>% 
+# Percentage of Yes in each group based on their job title
+bank_additional_full %>% 
   group_by(job) %>% 
   summarize(pct.yes = mean(y=="yes")*100) %>% 
   arrange(desc(pct.yes))
 ```
-
 ```{r, echo=FALSE, eval=TRUE}
-# Martial Statues Category 
+# Category: Martial Statues  
+
 # bar chart for martial status
 gg_martial = ggplot(bank, aes(x = marital, fill=marital)) + geom_bar() + 
   ggtitle("Distribution of Martial Status") + xlab("Martial Status")
 
 # Subscription by marital status 
-marital_sub = ggplot(bank, aes(x = marital, fill=y)) + geom_bar() + 
-  ggtitle("Distribution of Martial Status") + xlab("Martial Status")
+marital_sub = ggplot(bank_additional_full, aes(x = marital, fill=y)) + geom_bar() + 
+  ggtitle("Distribution of Martial Status by subscription") + xlab("Martial Status")
 
-# Percentage of Yes in the group based on their Marital status 
+# Percentage of Yes in each group based on their Marital status 
 
-bank %>% 
+bank_additional_full %>% 
   group_by(marital) %>% 
   summarize(pct.yes = mean(y=="yes")*100) %>% 
   arrange(desc(pct.yes))
+
+```
+```{r, echo=FALSE, eval=TRUE}
+# Consumer Price Index Distribution Graphs
+summary(bank$cons.price.idx)
+# Using GGplot, I constructed a bar graph to show the distribution of the consumer price index
+bar_price.idx=ggplot(bank, aes(x = cons.price.idx, fill=cons.price.idx)) + geom_bar()+
+  geom_vline(aes(xintercept=mean(cons.price.idx)),color="red")+ggtitle("Consumer Price Index with Red Mean Line")
+
+# Box plot for Age
+bp_cpi = gg+ geom_boxplot(aes(x="", y=cons.price.idx),outlier.colour = "red")+
+  ggtitle("Consumer Price Index Boxplot")+ ylab("Consumer Price Index")
+
+# Subscription by Consumer Price Index
+
+bar_cpi_sub = ggplot(bank_additional_full, aes(x = cons.price.idx, fill=y)) + geom_bar() + 
+  ggtitle("Term Deposit of Subscription by Consumer Price Index") + xlab("Consumer Price Index")
+
+his_cpi_sub =  ggplot(bank_additional_full, aes(x = cons.price.idx, fill=y)) + geom_histogram(color="black", fill="red", binwidth = 0.05) +facet_grid(cols=vars(y))
 
 ```
