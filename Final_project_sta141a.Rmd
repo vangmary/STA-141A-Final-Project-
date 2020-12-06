@@ -66,7 +66,7 @@ bank$month = fct_explicit_na(bank$month, "missing")
 bank$y =ifelse(bank$y =='yes',1,0) # transforming 'yes' category into a binary 1=yes 0=no
 ```
 
-```{r, echo=False, eval=True}
+```{r, echo=FALSE, eval=TRUE}
 ##### Data Exploration ######
 summary(bank) # summary of each categories 
 
@@ -109,6 +109,12 @@ his_age_sub = ggplot (bank_additional_full, aes(x=age)) +
   scale_x_continuous(breaks = seq(0,100,5)) +
   geom_vline(data=mean_age, aes(xintercept=grp.mean), color="red", linetype="dashed") + geom_vline(data=bank_additional_full, aes(xintercept=mean(age)), color="black")
 # this output two histograms for comparison, left histogram is for Age Distribution and the right histogram is for Subscription by Age. The black line shows the mean of the age superimposed onto the histograms and the dashed red line shows the mean of the age that subscriped onto the term deposit. 
+
+bank_additional_full %>% 
+  group_by(age) %>% 
+  summarize(age.cnt = n(), pct.con.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(age.cnt)) %>% 
+  head() 
 
 ```
 
@@ -182,7 +188,7 @@ summary(bank$cons.price.idx)
 bar_price.idx=ggplot(bank, aes(x = cons.price.idx, fill=cons.price.idx)) + geom_bar()+
   geom_vline(aes(xintercept=mean(cons.price.idx)),color="red")+ggtitle("Consumer Price Index with Red Mean Line")
 
-# Box plot for Age
+# Box plot for Consumer Price Index
 bp_cpi = gg+ geom_boxplot(aes(x="", y=cons.price.idx),outlier.colour = "red")+
   ggtitle("Consumer Price Index Boxplot")+ ylab("Consumer Price Index")
 
@@ -193,4 +199,97 @@ bar_cpi_sub = ggplot(bank_additional_full, aes(x = cons.price.idx, fill=y)) + ge
 
 his_cpi_sub =  ggplot(bank_additional_full, aes(x = cons.price.idx, fill=y)) + geom_histogram(color="black", fill="red", binwidth = 0.05) +facet_grid(cols=vars(y))
 
+bank_additional_full %>% 
+  group_by(cons.price.idx) %>% 
+  summarize(cpi.cnt = n(), pct.con.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(cpi.cnt)) %>% 
+  head() 
+
+```
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+# Category: Consumer Confidence Index Graphs 
+summary(bank$cons.conf.idx)
+
+bar_conf.idx=ggplot(bank, aes(x = cons.conf.idx, fill=cons.conf.idx)) + geom_bar()+
+  ggtitle("Consumer Confidence Index Bar Graph")
+
+# Box plot for Consumer Confidence Index
+bp_cci = gg+ geom_boxplot(aes(x="", y=cons.conf.idx),outlier.colour = "red")+
+  ggtitle("Consumer Confidence Index Boxplot")+ ylab("Consumer Confidence Index")
+
+# Subscription by Consumer Price Index
+
+bar_cci_sub = ggplot(bank_additional_full, aes(x = cons.conf.idx, fill=y)) + geom_bar() + 
+  ggtitle("Term Deposit of Subscription by Consumer Confidence Index") + xlab("Consumer Confidence Index")
+
+his_cci_sub = ggplot(bank_additional_full, aes(x=cons.conf.idx, fill=y)) +
+  geom_histogram(color="black", fill="red", binwidth = 1)+
+  facet_grid(cols=vars(y))+ggtitle("Term Deposit of Subscription by Consumer Confidence Index") +xlab("Consumer Confidence Index")
+
+bank_additional_full %>% 
+  group_by(cons.conf.idx) %>% 
+  summarize(cci.cnt = n(), pct.con.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(cci.cnt)) %>% 
+  head() 
+                                                                      
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Category: Campaign
+summary(bank$campaign)
+
+bar_campaign=ggplot(bank, aes(x = campaign, fill=campaign)) + geom_bar()+
+  ggtitle("Campaign")
+
+# Box plot for Campaign
+bp_campaign = gg+ geom_boxplot(aes(x="", y=campaign),outlier.colour = "red")+
+  ggtitle("Campaign")+ ylab("Campaign")
+
+bar_campaign_sub = ggplot(bank_additional_full, aes(x = campaign, fill=y)) + geom_bar() + 
+  ggtitle("Term Deposit of Subscription by Campaign") + xlab("Campaign")+xlim(c(min=0, max=30))
+
+his_campaign_sub = ggplot(bank_additional_full, aes(x = campaign, fill=y)) + geom_histogram() + 
+  ggtitle("Term Deposit of Subscription by Campaign") + xlab("Campaign")+xlim(c(min=0, max=30))
+
+bank_additional_full %>% 
+  group_by(campaign) %>% 
+  summarize(contact.cnt = n(), pct.con.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(contact.cnt)) %>% 
+  head() 
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Category : Duration
+
+summary(bank$duration)
+
+bar_duration=ggplot(bank, aes(x = duration, fill=duration)) + geom_bar(fill="blue")+
+  ggtitle("Duration Distribution")
+
+mean_duration <- bank_additional_full %>% group_by(y) %>% summarize(grp.mean=mean(duration))
+
+his_dur_sub = ggplot(bank_additional_full, aes(x = duration, fill=y)) + geom_histogram(binwidth = 2) +
+  facet_grid(cols=vars(y))+
+  ggtitle("Term Deposit of Subscription by Duration") + xlab("Duration")+coord_cartesian(xlim = c(0,2000), ylim = c(0,1000))+geom_vline(data=mean_duration, aes(xintercept = grp.mean), color="red")
+
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Employment Variation Rate
+summary(bank$emp.var.rate)
+
+his_evr = ggplot(bank, aes(x = emp.var.rate, fill=emp.var.rate)) + geom_histogram(fill="blue")+
+  ggtitle("Employment Variation Rate")
+
+mean_evr <- bank_additional_full %>% group_by(y) %>% summarize(grp.mean=mean(emp.var.rate))
+
+his_evr_sub = ggplot(bank_additional_full, aes(x = emp.var.rate, fill=y)) + geom_histogram(binwidth = 2) +facet_grid(cols=vars(y))+ggtitle("Term Deposit of Subscription by Employment Variation Rate") + xlab("Employment Variation Rate")+geom_vline(data=mean_evr, aes(xintercept = grp.mean), color="red")
+
+```
+
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+# this is the code appendix 
 ```
