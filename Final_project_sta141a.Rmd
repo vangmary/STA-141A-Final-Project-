@@ -386,6 +386,7 @@ abline(0, 1, col = "red", lty = 1)}
 ```{r, echo=FALSE, eval=TRUE}
 
 # Model 2: Logistic Regression
+set.seed(123)
 
 table(train$y)
 
@@ -402,14 +403,14 @@ bank_glm_pred_label <- as.factor(ifelse(bank_glm_pred>.7, "1", "0"))
 
 confusionMatrix(factor(bank_glm_pred), factor(test$y), positive = "1")
 
-bank_add_logreg_roc <- prediction(bank_glm_pred, test$y)
-rocr.perf_glm=performance(bank_add_logreg_roc, "tpr", "fpr")
-bank_add_logreg_auc <- performance(bank_add_logreg_roc, "auc")
-auc_glm<-bank_add_logreg_auc@y.values[[1]]
+bank_glm_roc <- prediction(bank_glm_pred, test$y)
+rocr.perf_glm=performance(bank_glm_roc, "tpr", "fpr")
+bank_glm_auc <- performance(bank_glm_roc, "auc")
+auc_glm<-bank_glm_auc@y.values[[1]]
 
 
 # print ROC AUC
-rocr.auc
+auc_glm
 
 #plot ROC curve
 roc_curve<-{plot(rocr.perf_glm,
