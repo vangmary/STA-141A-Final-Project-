@@ -12,11 +12,23 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+set.seed(1)
 library(ggplot2)
 library(knitr)
 library(magrittr) 
 library(dplyr)
 library(tidyverse)
+library(ggcorrplot)
+library(rpart)
+library(rpart.plot)
+library(tree)
+library(ISLR)
+library(caret)
+library(randomForest)
+library(gbm)
+library(lda)
+library(ROCR)
+
 
 #######Set up and Data Wrangling########
 
@@ -81,6 +93,22 @@ bank_col = ncol(bank)
 
 # observation of the dataset
 head(bank)
+
+bank %>% 
+  select(age, duration, campaign, emp.var.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed,y) %>% 
+  cor() %>% 
+  corrplot(method = "pie",
+           type = "upper",
+           tl.cex = 0.8,
+           tl.srt = 45,
+           tl.col = "black",
+           title = "Correlation Matrix for all Numerical Variables ")
+
+# Scatter Plot Matrix
+bank_matrix_factor <- bank %>% select(job, marital, education, default, housing,loan,
+                                      contact,month,day_of_week,poutcome)
+pairs(bank_matrix_factor)
+plot(bank_matrix_factor)
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -141,7 +169,6 @@ bank_additional_full %>%
 
 ```
 
-```{r, echo=FALSE, eval=TRUE}
 ```{r, echo=FALSE, eval=TRUE}
 # Category: Job
 summary(bank$job)
@@ -288,6 +315,72 @@ mean_evr <- bank_additional_full %>% group_by(y) %>% summarize(grp.mean=mean(emp
 
 his_evr_sub = ggplot(bank_additional_full, aes(x = emp.var.rate, fill=y)) + geom_histogram(binwidth = 2) +facet_grid(cols=vars(y))+ggtitle("Term Deposit of Subscription by Employment Variation Rate") + xlab("Employment Variation Rate")+geom_vline(data=mean_evr, aes(xintercept = grp.mean), color="red")
 
+bank_additional_full %>% 
+  group_by(emp.var.rate) %>% 
+  summarize(contact.cnt = n(), pct.con.yes = mean(y=="yes")*100) %>% 
+  arrange(desc(contact.cnt)) %>% 
+  head() 
+```
+
+```{r, echo=FALSE, eval=TRUE}
+#### Comparison of Variables
+
+```
+
+```{r, echo=FALSE, eval=TRUE}
+#Split the Training / Testing data 
+set.seed(1)
+
+train = bank %>%
+  sample_frac(0.80)
+
+test = bank %>%
+  setdiff(train)
+
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Model 1: Decision Tree with training set
+tree_model <-rpart(y ~ .,
+                   data=train,
+                   method ="class")
+rpart.plot(tree_model,
+           main="Decision Tree",
+           type=2,
+           extra = 104,
+           fallen.leaves = TRUE)
+# type= 2 : draw the split labels below the node labels
+# extra = 104 : class model with a response having more than two levels
+
+#Evaluating the Decision Tree Model
+
+#prediction model
+pred<-predict(tree_model,test,type = "class")
+#confusion matrix
+confusionMatrix(as.factor(test$y),as.factor(pred))
+
+# calculate ROC curve
+pred.DT = predict(tree_model, newdata = test, type = 'prob')
+rocr.pred = prediction(predictions=pred.DT[,2], labels = test$y)
+rocr.perf = performance(rocr.pred, measure = "tpr", x.measure = "fpr")
+rocr.auc = as.numeric(performance(rocr.pred, "auc")@y.values)
+
+# print ROC AUC
+rocr.auc
+
+#plot ROC curve
+{plot(rocr.perf,
+     lwd = 3, colorize = TRUE,
+     print.cutoffs.at = seq(0, 1, by = 0.1),
+     text.adj = c(-0.2, 1.7),
+     main = 'ROC Curve')
+mtext(paste('Decision Tree - auc : ', round(rocr.auc, 5)))
+abline(0, 1, col = "red", lty = 1)}
+```
+```{r, echo=FALSE< eval=TRUE}
+# Model 2: Logistic Regression
+
+model_lm <-
 ```
 
 ```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
