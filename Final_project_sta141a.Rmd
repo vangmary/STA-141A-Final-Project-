@@ -28,8 +28,10 @@ library(randomForest)
 library(gbm)
 library(lda)
 library(ROCR)
-
-
+library(corrplot)
+library(MASS)
+library(caTools)
+library(rsample)
 #######Set up and Data Wrangling########
 
 setwd("/Users/trucle/Desktop/STA\ 138/Bank/bank-additional")
@@ -105,10 +107,14 @@ bank %>%
            title = "Correlation Matrix for all Numerical Variables ")
 
 # Scatter Plot Matrix
-bank_matrix_factor <- bank %>% select(job, marital, education, default, housing,loan,
+bank_matrix_factor1 <- bank %>% select(job, marital, education, default, housing)
+pairs(bank_matrix_factor1)
+
+bank_matrix_factor2 <-bank %>% select(loan,
                                       contact,month,day_of_week,poutcome)
-pairs(bank_matrix_factor)
-plot(bank_matrix_factor)
+pairs(bank_matrix_factor2)
+
+
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -329,13 +335,9 @@ bank_additional_full %>%
 
 ```{r, echo=FALSE, eval=TRUE}
 #Split the Training / Testing data 
-set.seed(1)
-
-train = bank %>%
-  sample_frac(0.80)
-
-test = bank %>%
-  setdiff(train)
+split<-sample(nrow(bank),0.80*nrow(bank),replace = F)
+train<-bank[split,]
+test<-bank[-split,]
 
 ```
 
@@ -369,18 +371,55 @@ rocr.auc = as.numeric(performance(rocr.pred, "auc")@y.values)
 rocr.auc
 
 #plot ROC curve
-{plot(rocr.perf,
+roc_curve<-{plot(rocr.perf,
      lwd = 3, colorize = TRUE,
      print.cutoffs.at = seq(0, 1, by = 0.1),
      text.adj = c(-0.2, 1.7),
      main = 'ROC Curve')
 mtext(paste('Decision Tree - auc : ', round(rocr.auc, 5)))
 abline(0, 1, col = "red", lty = 1)}
-```
-```{r, echo=FALSE< eval=TRUE}
-# Model 2: Logistic Regression
 
-model_lm <-
+
+```
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+# Model 2: K Nearest Neighbors
+set.seed(123)
+
+table(train$y)
+
+bank_glm <- glm(formula = y ~ age+ job + marital + education + default + housing + 
+    loan + contact + month + duration+ day_of_week + campaign + pdays + 
+    previous + poutcome + emp.var.rate + cons.price.idx + cons.conf.idx + 
+    euribor3m + nr.employed, family = "binomial", data = train)
+
+summary(bank_glm)
+
+bank_glm_pred <- predict(bank_glm, test, type = "response")
+
+bank_glm_pred_label <- as.factor(ifelse(bank_glm_pred>.7, "1", "0"))
+
+confusionMatrix(factor(bank_glm_pred), factor(test$y), positive = "1")
+
+bank_add_logreg_roc <- prediction(bank_glm_pred, test$y)
+rocr.perf_glm=performance(bank_add_logreg_roc, "tpr", "fpr")
+bank_add_logreg_auc <- performance(bank_add_logreg_roc, "auc")
+auc_glm<-bank_add_logreg_auc@y.values[[1]]
+
+
+# print ROC AUC
+rocr.auc
+
+#plot ROC curve
+roc_curve<-{plot(rocr.perf_glm,
+     lwd = 3, colorize = TRUE,
+     print.cutoffs.at = seq(0, 1, by = 0.1),
+     text.adj = c(-0.2, 1.7),
+     main = 'ROC Curve')
+mtext(paste('Decision Tree - auc : ', round(auc_glm, 5)))
+abline(0, 1, col = "red", lty = 1)}
 ```
 
 ```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
