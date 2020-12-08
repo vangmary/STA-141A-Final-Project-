@@ -385,8 +385,7 @@ abline(0, 1, col = "red", lty = 1)}
 
 ```{r, echo=FALSE, eval=TRUE}
 
-# Model 2: K Nearest Neighbors
-set.seed(123)
+# Model 2: Logistic Regression
 
 table(train$y)
 
