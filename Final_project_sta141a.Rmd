@@ -97,7 +97,7 @@ bank_col = ncol(bank)
 head(bank)
 
 bank %>% 
-  select(age, duration, campaign, emp.var.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed,y) %>% 
+  dplyr::select(age, duration, campaign, emp.var.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed,y) %>% 
   cor() %>% 
   corrplot(method = "pie",
            type = "upper",
@@ -107,10 +107,10 @@ bank %>%
            title = "Correlation Matrix for all Numerical Variables ")
 
 # Scatter Plot Matrix
-bank_matrix_factor1 <- bank %>% select(job, marital, education, default, housing)
+bank_matrix_factor1 <- bank %>% dplyr::select(job, marital, education, default, housing)
 pairs(bank_matrix_factor1)
 
-bank_matrix_factor2 <-bank %>% select(loan,
+bank_matrix_factor2 <-bank %>% dplyr::select(loan,
                                       contact,month,day_of_week,poutcome)
 pairs(bank_matrix_factor2)
 
