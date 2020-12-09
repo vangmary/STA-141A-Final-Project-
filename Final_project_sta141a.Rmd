@@ -335,9 +335,9 @@ bank_additional_full %>%
 
 ```{r, echo=FALSE, eval=TRUE}
 #Split the Training / Testing data 
-split<-sample(nrow(bank),0.80*nrow(bank),replace = F)
-train<-bank[split,]
-test<-bank[-split,]
+split = sample.split(bank$y,SplitRatio = 0.70)
+train = subset(bank, split == TRUE)
+test = subset(bank, split == FALSE)
 
 ```
 
@@ -420,6 +420,43 @@ roc_curve<-{plot(rocr.perf_glm,
      main = 'ROC Curve')
 mtext(paste('Decision Tree - auc : ', round(auc_glm, 5)))
 abline(0, 1, col = "red", lty = 1)}
+```
+
+```{r, echo=FALSE, eval=TRUE}
+# Model 3: K-Nearest Neighbor
+# have to make the y into a factor in order to run the knn code
+train$y <- as.factor(train$y)
+train$y <- as.factor(train$y)
+
+model.KNN <- kknn( y ~ age+ job + marital + education + default + housing + 
+    loan + contact + month + duration+ day_of_week + campaign + pdays + 
+    previous + poutcome + emp.var.rate + cons.price.idx + cons.conf.idx + 
+    euribor3m + nr.employed, train, test, k=5, distance = 2)
+summary(model.KNN)
+
+
+bank_knn_pred <- predict(model.KNN, test, type="raw")
+bank_knn_pred_label <- table(bank_knn_pred, test$y)
+confusionMatrix(bank_knn_pred_label, positive = "yes")
+
+
+pb <- predict(model.KNN, na.roughfix(test), type="prob")
+pb <- as.data.frame(pb)
+pred.KNN <- data.frame(test$y, pb$yes)
+
+labels <- as.factor(ifelse(pred.KNN$test.y=="yes", 1, 0))
+predictions <- pred.KNN$pb.yes
+auc_knn<-auc(roc(predictions, labels), min = 0, max = 1)
+
+
+{plot(roc(predictions, labels), col="blue",
+      lwd=3,
+     print.cutoffs.at = seq(0, 1, by = 0.1),
+      main= "ROC Curve")
+  mtext(paste('K-Nearest Neighbors - auc : ', round(auc_knn, 5)))
+  abline(0, 1, col = "red", lty = 1)}
+      
+
 ```
 
 ```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
