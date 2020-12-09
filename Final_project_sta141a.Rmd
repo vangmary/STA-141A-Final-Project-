@@ -26,12 +26,16 @@ library(ISLR)
 library(caret)
 library(randomForest)
 library(gbm)
-library(lda)
 library(ROCR)
 library(corrplot)
 library(MASS)
 library(caTools)
 library(rsample)
+library(class)
+library(kknn)
+library(AUC)
+
+
 #######Set up and Data Wrangling########
 
 setwd("/Users/trucle/Desktop/STA\ 138/Bank/bank-additional")
@@ -96,9 +100,7 @@ bank_col = ncol(bank)
 # observation of the dataset
 head(bank)
 
-bank %>% 
-  dplyr::select(age, duration, campaign, emp.var.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed,y) %>% 
-  cor() %>% 
+bank %>% dplyr::select(age, duration, campaign, emp.var.rate, cons.price.idx, cons.conf.idx, euribor3m, nr.employed,y) %>% cor() %>% 
   corrplot(method = "pie",
            type = "upper",
            tl.cex = 0.8,
@@ -385,29 +387,27 @@ abline(0, 1, col = "red", lty = 1)}
 
 ```{r, echo=FALSE, eval=TRUE}
 
-# Model 2: Logistic Regression
-set.seed(123)
+# Model 2: General Logistic Regression
 
 table(train$y)
 
-bank_glm <- glm(formula = y ~ age+ job + marital + education + default + housing + 
+model_glm <- glm(formula = y ~ age+ job + marital + education + default + housing + 
     loan + contact + month + duration+ day_of_week + campaign + pdays + 
     previous + poutcome + emp.var.rate + cons.price.idx + cons.conf.idx + 
     euribor3m + nr.employed, family = "binomial", data = train)
 
-summary(bank_glm)
+summary(model_glm)
 
-bank_glm_pred <- predict(bank_glm, test, type = "response")
+bank_glm_pred <- predict(model_glm, test, type = "response")
 
-bank_glm_pred_label <- as.factor(ifelse(bank_glm_pred>.7, "1", "0"))
+bank_glm_pred_label <- as.factor(ifelse(bank_glm_pred>.3, "1", "0"))
 
-confusionMatrix(factor(bank_glm_pred), factor(test$y), positive = "1")
+confusionMatrix(factor(bank_glm_pred_label), factor(test$y), positive = "1")
 
 bank_glm_roc <- prediction(bank_glm_pred, test$y)
 rocr.perf_glm=performance(bank_glm_roc, "tpr", "fpr")
 bank_glm_auc <- performance(bank_glm_roc, "auc")
 auc_glm<-bank_glm_auc@y.values[[1]]
-
 
 # print ROC AUC
 auc_glm
@@ -418,40 +418,42 @@ roc_curve<-{plot(rocr.perf_glm,
      print.cutoffs.at = seq(0, 1, by = 0.1),
      text.adj = c(-0.2, 1.7),
      main = 'ROC Curve')
-mtext(paste('Decision Tree - auc : ', round(auc_glm, 5)))
+mtext(paste('General Logistic Regression - auc : ', round(auc_glm, 5)))
 abline(0, 1, col = "red", lty = 1)}
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
 # Model 3: K-Nearest Neighbor
 # have to make the y into a factor in order to run the knn code
+split = sample.split(bank$y,SplitRatio = 0.70)
+train = subset(bank, split == TRUE)
+test = subset(bank, split == FALSE)
 train$y <- as.factor(train$y)
-train$y <- as.factor(train$y)
+test$y <- as.factor(test$y)
 
 model.KNN <- kknn( y ~ age+ job + marital + education + default + housing + 
     loan + contact + month + duration+ day_of_week + campaign + pdays + 
     previous + poutcome + emp.var.rate + cons.price.idx + cons.conf.idx + 
-    euribor3m + nr.employed, train, test, k=5, distance = 2)
+    euribor3m + nr.employed, train, test, k=5, distance = 2,scale=FALSE, getOption(max.print=100))
 summary(model.KNN)
 
-
+bank_knn_pred <-NULL
 bank_knn_pred <- predict(model.KNN, test, type="raw")
 bank_knn_pred_label <- table(bank_knn_pred, test$y)
-confusionMatrix(bank_knn_pred_label, positive = "yes")
+confusionMatrix(bank_knn_pred_label, positive = "1")
 
+pb_bank <- NULL
+pb_bank <- predict(model.KNN, test, type="prob")
+pb_bank <- as.data.frame(pb_bank)
+pred.KNN <- data.frame(test$y, pb_bank$"1")
 
-pb <- predict(model.KNN, na.roughfix(test), type="prob")
-pb <- as.data.frame(pb)
-pred.KNN <- data.frame(test$y, pb$yes)
-
-labels <- as.factor(ifelse(pred.KNN$test.y=="yes", 1, 0))
-predictions <- pred.KNN$pb.yes
+labels <- as.factor(ifelse(pred.KNN$test.y=="1", 1, 0))
+predictions <- pred.KNN$pb_bank..1.
 auc_knn<-auc(roc(predictions, labels), min = 0, max = 1)
 
 
 {plot(roc(predictions, labels), col="blue",
       lwd=3,
-     print.cutoffs.at = seq(0, 1, by = 0.1),
       main= "ROC Curve")
   mtext(paste('K-Nearest Neighbors - auc : ', round(auc_knn, 5)))
   abline(0, 1, col = "red", lty = 1)}
