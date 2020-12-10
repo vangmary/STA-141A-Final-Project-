@@ -554,6 +554,35 @@ auc_knn<-auc(roc(predictions, labels), min = 0, max = 1)
   abline(0, 1, col = "red", lty = 1)}
       
 ```
+```{r, echo =FALSE}
+# Extra Credit
+
+library(kernlab)
+bank_classifier <- ksvm(as.factor(y) ~ ., data = train,kernel = "vanilladot")
+bank_classifier
+
+
+#predictions:
+bank_predictions <- predict(bank_classifier, test)
+#Check the accuracy:
+caret::confusionMatrix(bank_predictions,as.factor(test$y))
+agreement <- bank_predictions == as.factor(test$y)
+prop.table(table(agreement))
+#We get an accuracy of 90.9% with a simple linear kernel
+
+
+#Gaussian
+bank_classifier_rbf <- ksvm(as.factor(y) ~ ., data = train,kernel = "rbfdot")
+#predictions:
+bank_predictions <- predict(bank_classifier_rbf,test)
+#Check the accuracy:
+caret::confusionMatrix(bank_predictions,as.factor(test$y))
+agreement <- bank_predictions == as.factor(test$y)
+prop.table(table(agreement))
+#We get an accuracy of 91.4% with a Gaussian kernel
+
+
+```
 
 ```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
 # this is the code appendix 
